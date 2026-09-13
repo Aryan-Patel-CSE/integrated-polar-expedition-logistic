@@ -44,7 +44,7 @@ import {
   YAxis,
 } from 'recharts'
 
-type View = 'dashboard' | 'operations' | 'assets' | 'inventory' | 'logistics' | 'maintenance' | 'personnel' | 'alerts' | 'analytics'
+type View = 'dashboard' | 'assets' | 'inventory' | 'logistics' | 'maintenance' | 'personnel' | 'alerts' | 'analytics'
 type AssetStatus = 'Operational' | 'Maintenance' | 'Damaged' | 'Missing'
 type StockStatus = 'Normal' | 'Low stock' | 'Critical'
 
@@ -132,7 +132,6 @@ const assetHealth = [
 
 const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-  { id: 'operations', label: 'Expeditions', icon: ClipboardList },
   { id: 'assets', label: 'Asset registry', icon: Boxes },
   { id: 'inventory', label: 'Inventory', icon: PackageSearch },
   { id: 'logistics', label: 'Logistics', icon: Truck },
@@ -173,8 +172,8 @@ function App() {
 
   useEffect(() => { localStorage.setItem('ploropsis-operational-model', JSON.stringify(model)) }, [model])
 
-  const pageTitle = view === 'dashboard' ? 'Operations overview' : view === 'operations' ? 'Expeditions' : view === 'assets' ? 'Asset registry' : view === 'inventory' ? 'Inventory control' : view === 'logistics' ? 'Logistics control' : view === 'maintenance' ? 'Maintenance control' : view === 'personnel' ? 'Personnel readiness' : view === 'alerts' ? 'Alert center' : 'Decision analytics'
-  const pageDescription = view === 'dashboard' ? 'Live readiness picture for the current polar operation.' : view === 'operations' ? 'Move an expedition record from approval to field outcome.' : view === 'assets' ? 'Track condition, location and lifecycle of every field asset.' : view === 'inventory' ? 'Monitor consumables, thresholds and stock movement across stations.' : view === 'logistics' ? 'Coordinate movement, receipt and handover of expedition cargo.' : view === 'maintenance' ? 'Keep equipment serviceable with accountable work orders.' : view === 'personnel' ? 'See who is available, deployed and responsible for the next action.' : view === 'alerts' ? 'Explain operational risk and close the loop on response.' : 'Understand utilization, consumption and operational pressure by station.'
+  const pageTitle = view === 'dashboard' ? 'Operations overview' : view === 'assets' ? 'Asset registry' : view === 'inventory' ? 'Inventory control' : view === 'logistics' ? 'Logistics control' : view === 'maintenance' ? 'Maintenance control' : view === 'personnel' ? 'Personnel readiness' : view === 'alerts' ? 'Alert center' : 'Decision analytics'
+  const pageDescription = view === 'dashboard' ? 'Live readiness picture for the current polar operation.' : view === 'assets' ? 'Track condition, location and lifecycle of every field asset.' : view === 'inventory' ? 'Monitor consumables, thresholds and stock movement across stations.' : view === 'logistics' ? 'Coordinate movement, receipt and handover of expedition cargo.' : view === 'maintenance' ? 'Keep equipment serviceable with accountable work orders.' : view === 'personnel' ? 'See who is available, deployed and responsible for the next action.' : view === 'alerts' ? 'Explain operational risk and close the loop on response.' : 'Understand utilization, consumption and operational pressure by station.'
 
   const navigate = (nextView: View) => {
     setView(nextView)
@@ -195,8 +194,6 @@ function App() {
         <nav className="main-nav" aria-label="Primary navigation">
           <p className="nav-label">Command center</p>
           {navItems.map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => navigate(id)}><Icon size={18} /><span>{label}</span>{id === 'dashboard' && <span className="nav-pulse" />}</button>)}
-          <p className="nav-label nav-label-spaced">Operations</p>
-          {navItems.filter(({ id }) => ['logistics', 'maintenance', 'personnel', 'alerts'].includes(id)).map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => navigate(id)}><Icon size={18} /><span>{label}</span>{id === 'alerts' && <span className="alert-count">{model.alerts.filter((alert) => !alert.resolved).length}</span>}</button>)}
         </nav>
         <div className="sidebar-footer"><button className="nav-item"><Settings size={18} /><span>Settings</span></button><div className="user-chip"><div className="avatar">EM</div><div><strong>Expedition manager</strong><span>Operations team</span></div><ChevronRight size={15} /></div></div>
       </aside>
@@ -206,7 +203,6 @@ function App() {
         <div className="page-wrap">
           <div className="page-heading"><div><div className="eyebrow"><span className="live-dot" /> SYSTEMS NOMINAL <span className="eyebrow-divider">/</span> 13 SEPTEMBER 2026</div><h1>{pageTitle}</h1><p>{pageDescription}</p></div><div className="heading-actions"><button className="secondary-button"><CalendarDays size={16} /> Last 30 days</button><button className="primary-button" onClick={() => navigate(view === 'assets' ? 'assets' : 'inventory')}><Activity size={16} /> Quick action</button></div></div>
           {view === 'dashboard' && <Dashboard navigate={navigate} />}
-          {view === 'operations' && <OperationsPage model={model} setModel={setModel} />}
           {view === 'assets' && <AssetsPage search={search} onSelect={setSelectedAsset} />}
           {view === 'inventory' && <InventoryPage search={search} />}
           {view === 'logistics' && <LogisticsPage model={model} setModel={setModel} />}

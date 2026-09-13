@@ -181,11 +181,6 @@ function App() {
         <nav className="main-nav" aria-label="Primary navigation">
           <p className="nav-label">Command center</p>
           {navItems.map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => navigate(id)}><Icon size={18} /><span>{label}</span>{id === 'dashboard' && <span className="nav-pulse" />}</button>)}
-          <p className="nav-label nav-label-spaced">Operations</p>
-          <button className="nav-item muted"><Truck size={18} /><span>Logistics</span><span className="coming-soon">Soon</span></button>
-          <button className="nav-item muted"><Wrench size={18} /><span>Maintenance</span><span className="coming-soon">Soon</span></button>
-          <button className="nav-item muted"><ShieldCheck size={18} /><span>Personnel</span><span className="coming-soon">Soon</span></button>
-          <button className="nav-item muted"><AlertTriangle size={18} /><span>Alerts</span><span className="alert-count">4</span></button>
         </nav>
         <div className="sidebar-footer"><button className="nav-item"><Settings size={18} /><span>Settings</span></button><div className="user-chip"><div className="avatar">EM</div><div><strong>Expedition manager</strong><span>Operations team</span></div><ChevronRight size={15} /></div></div>
       </aside>
