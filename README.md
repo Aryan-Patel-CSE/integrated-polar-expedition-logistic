@@ -1,4 +1,4 @@
-# POLAR OPS
+# PLOROPSIS
 
 
 > **A unified operations command center for safer, smarter and more resilient polar research missions.**
@@ -9,7 +9,7 @@
 
 Polar research stations operate in remote, high-risk environments where a delayed maintenance task, missing equipment item or low medical stock can quickly become an operational threat.
 
-**POLAR OPS** brings asset health, inventory readiness, station utilization and operational alerts into one decision-support dashboard for India's polar research operations.
+**PLOROPSIS** brings asset health, inventory readiness, station utilization and operational alerts into one decision-support dashboard for India's polar research operations.
 
 The prototype is designed around the NCPOR command workflow and the ISEA-46 operation across **Maitri, Bharati and Himadri** stations.
 
@@ -31,7 +31,7 @@ In an environment where resupply is expensive and weather can restrict access, v
 
 ## 3. Our Solution
 
-POLAR OPS provides a single operational picture for expedition managers and command teams.
+PLOROPSIS provides a single operational picture for expedition managers and command teams.
 
 The platform converts operational records into clear, actionable views:
 
@@ -93,7 +93,7 @@ A command team opens the dashboard before the next review cycle:
 
 ## 6. Innovation and Value
 
-POLAR OPS is not only a record-keeping interface. It is a common operating picture for difficult, distributed environments.
+PLOROPSIS is not only a record-keeping interface. It is a common operating picture for difficult, distributed environments.
 
 - **Risk-first visibility:** critical issues are placed where decisions happen.
 - **Cross-domain coordination:** assets, inventory and station activity are viewed together.
