@@ -48,3 +48,24 @@
 .clipboard-check-icon svg:last-child { position: absolute; right: -2px; bottom: -2px; color: var(--mint); background: white; border-radius: 50%; }
 @media (max-width: 900px) { .workflow-steps { grid-template-columns: repeat(11, 112px); }.workflow-detail-grid { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .workflow-panel, .workflow-explainer, .workflow-ledger { padding: 18px; }.explanation-columns { grid-template-columns: 1fr; }.explanation-columns > div { min-height: auto; }.workflow-step { min-height: 76px; } }
+.inline-actions { display: flex; align-items: center; gap: 8px; }
+.compact-select { border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: #fff; padding: 8px 10px; font-size: 11px; }
+.table-subtext { display: block; color: var(--muted); font-size: 10px; margin-top: 4px; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.table-explanation { color: var(--muted); font-size: 11px; max-width: 280px; }
+.priority-label { display: inline-block; border-radius: 5px; padding: 4px 7px; background: #eef3f1; color: #617579; font: 10px 'DM Mono', monospace; }
+.priority-label.priority { background: var(--amber-soft); color: var(--amber); }
+.priority-label.urgent { background: var(--red-soft); color: var(--red); }
+.inline-form-panel { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(180px, .75fr) minmax(220px, 1fr) auto; align-items: end; gap: 13px; padding: 19px 22px; }
+.inline-form-panel h2 { margin: 5px 0 4px; font-size: 16px; }
+.inline-form-panel p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.inline-form-panel input { border: 1px solid #d4e2de; border-radius: 6px; background: #fbfdfc; color: var(--ink); padding: 10px 11px; outline: none; }
+.inline-form-panel input:focus { border-color: var(--mint); box-shadow: 0 0 0 3px #329f7c1c; }
+.alert-list { padding: 3px 22px 18px; }
+.alert-list .attention-item { grid-template-columns: 28px minmax(0, 1fr) auto; }
+.alert-list .attention-item > div { min-width: 0; }
+.alert-list .attention-item > div span { white-space: normal; line-height: 1.4; }
+.status-badge.planned { color: #687b80; background: #eef3f1; }
+.status-badge.in-progress { color: #a77523; background: var(--amber-soft); }
+.status-badge.completed { color: #318766; background: var(--mint-soft); }
+.status-badge.delayed { color: #c85649; background: var(--red-soft); }
+@media (max-width: 800px) { .inline-form-panel { grid-template-columns: 1fr; align-items: stretch; }.inline-form-panel .secondary-button { justify-self: start; }.inline-actions { flex-wrap: wrap; } }

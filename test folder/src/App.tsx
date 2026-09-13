@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
   AlertTriangle,
@@ -44,7 +44,7 @@ import {
   YAxis,
 } from 'recharts'
 
-type View = 'dashboard' | 'operations' | 'assets' | 'inventory' | 'analytics'
+type View = 'dashboard' | 'operations' | 'assets' | 'inventory' | 'logistics' | 'maintenance' | 'personnel' | 'alerts' | 'analytics'
 type AssetStatus = 'Operational' | 'Maintenance' | 'Damaged' | 'Missing'
 type StockStatus = 'Normal' | 'Low stock' | 'Critical'
 
@@ -78,6 +78,8 @@ type Shipment = { id: string; route: string; cargo: string; eta: string; status:
 type Deployment = { id: string; assetId: string; destination: string; assignee: string; status: WorkflowStatus }
 type ConsumptionLog = { id: string; item: string; quantity: number; station: string; reason: string; date: string }
 type AlertRecord = { id: string; title: string; severity: 'Info' | 'Warning' | 'Critical'; explanation: string; resolved: boolean }
+type LogisticsRecord = { id: string; type: 'Shipment' | 'Receipt' | 'Transfer'; reference: string; origin: string; destination: string; status: WorkflowStatus; owner: string; explanation: string }
+type MaintenanceRecord = { id: string; assetId: string; work: string; priority: 'Routine' | 'Priority' | 'Urgent'; status: 'Scheduled' | 'In progress' | 'Completed' | 'Blocked'; due: string; technician: string; explanation: string }
 type OperationalModel = {
   expenditures: Expenditure[]
   people: Person[]
@@ -87,6 +89,8 @@ type OperationalModel = {
   deployments: Deployment[]
   consumption: ConsumptionLog[]
   alerts: AlertRecord[]
+  logistics: LogisticsRecord[]
+  maintenance: MaintenanceRecord[]
 }
 
 const assets: Asset[] = [
@@ -131,6 +135,10 @@ const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'operations', label: 'Operations flow', icon: ClipboardList },
   { id: 'assets', label: 'Asset registry', icon: Boxes },
   { id: 'inventory', label: 'Inventory', icon: PackageSearch },
+  { id: 'logistics', label: 'Logistics', icon: Truck },
+  { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+  { id: 'personnel', label: 'Personnel', icon: Users },
+  { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ]
 
@@ -143,6 +151,17 @@ const seedOperationalModel: OperationalModel = {
   deployments: [{ id: 'DEP-008', assetId: 'GEN-104', destination: 'Maitri power shed', assignee: 'Milan Das', status: 'In progress' }],
   consumption: [{ id: 'CON-118', item: 'Diesel fuel', quantity: 42, station: 'Maitri', reason: 'Generator load test', date: '13 Sep 2026' }],
   alerts: [{ id: 'ALT-041', title: 'Medical kits below critical threshold', severity: 'Critical', explanation: 'Bharati has 12 kits against a threshold of 20. Link a shipment or approve replenishment.', resolved: false }],
+  logistics: [{ id: 'LOG-031', type: 'Shipment', reference: 'SH-204', origin: 'Cape Town', destination: 'Maitri', status: 'Delayed', owner: 'Milan Das', explanation: 'Weather window reduced the next transfer opportunity by 18 hours.' }],
+  maintenance: [{ id: 'WO-118', assetId: 'VEH-022', work: 'Track inspection and hydraulic service', priority: 'Priority', status: 'In progress', due: '14 Sep 2026', technician: 'R. Menon', explanation: 'Snow vehicle is required for the next Bharati field sortie.' }],
+}
+
+function loadOperationalModel(): OperationalModel {
+  try {
+    const saved = localStorage.getItem('ploropsis-operational-model')
+    return saved ? JSON.parse(saved) as OperationalModel : seedOperationalModel
+  } catch {
+    return seedOperationalModel
+  }
 }
 
 function App() {
@@ -150,10 +169,12 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
-  const [model, setModel] = useState<OperationalModel>(seedOperationalModel)
+  const [model, setModel] = useState<OperationalModel>(loadOperationalModel)
 
-  const pageTitle = view === 'dashboard' ? 'Operations overview' : view === 'operations' ? 'Operations flow' : view === 'assets' ? 'Asset registry' : view === 'inventory' ? 'Inventory control' : 'Decision analytics'
-  const pageDescription = view === 'dashboard' ? 'Live readiness picture for the current polar operation.' : view === 'operations' ? 'Move one operational record from approval to field outcome.' : view === 'assets' ? 'Track condition, location and lifecycle of every field asset.' : view === 'inventory' ? 'Monitor consumables, thresholds and stock movement across stations.' : 'Understand utilization, consumption and operational pressure by station.'
+  useEffect(() => { localStorage.setItem('ploropsis-operational-model', JSON.stringify(model)) }, [model])
+
+  const pageTitle = view === 'dashboard' ? 'Operations overview' : view === 'operations' ? 'Operations flow' : view === 'assets' ? 'Asset registry' : view === 'inventory' ? 'Inventory control' : view === 'logistics' ? 'Logistics control' : view === 'maintenance' ? 'Maintenance control' : view === 'personnel' ? 'Personnel readiness' : view === 'alerts' ? 'Alert center' : 'Decision analytics'
+  const pageDescription = view === 'dashboard' ? 'Live readiness picture for the current polar operation.' : view === 'operations' ? 'Move one operational record from approval to field outcome.' : view === 'assets' ? 'Track condition, location and lifecycle of every field asset.' : view === 'inventory' ? 'Monitor consumables, thresholds and stock movement across stations.' : view === 'logistics' ? 'Coordinate movement, receipt and handover of expedition cargo.' : view === 'maintenance' ? 'Keep equipment serviceable with accountable work orders.' : view === 'personnel' ? 'See who is available, deployed and responsible for the next action.' : view === 'alerts' ? 'Explain operational risk and close the loop on response.' : 'Understand utilization, consumption and operational pressure by station.'
 
   const navigate = (nextView: View) => {
     setView(nextView)
@@ -175,10 +196,7 @@ function App() {
           <p className="nav-label">Command center</p>
           {navItems.map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => navigate(id)}><Icon size={18} /><span>{label}</span>{id === 'dashboard' && <span className="nav-pulse" />}</button>)}
           <p className="nav-label nav-label-spaced">Operations</p>
-          <button className="nav-item muted"><Truck size={18} /><span>Logistics</span><span className="coming-soon">Soon</span></button>
-          <button className="nav-item muted"><Wrench size={18} /><span>Maintenance</span><span className="coming-soon">Soon</span></button>
-          <button className="nav-item muted"><ShieldCheck size={18} /><span>Personnel</span><span className="coming-soon">Soon</span></button>
-          <button className="nav-item muted"><AlertTriangle size={18} /><span>Alerts</span><span className="alert-count">4</span></button>
+          {navItems.filter(({ id }) => ['logistics', 'maintenance', 'personnel', 'alerts'].includes(id)).map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => navigate(id)}><Icon size={18} /><span>{label}</span>{id === 'alerts' && <span className="alert-count">{model.alerts.filter((alert) => !alert.resolved).length}</span>}</button>)}
         </nav>
         <div className="sidebar-footer"><button className="nav-item"><Settings size={18} /><span>Settings</span></button><div className="user-chip"><div className="avatar">EM</div><div><strong>Expedition manager</strong><span>Operations team</span></div><ChevronRight size={15} /></div></div>
       </aside>
@@ -191,6 +209,10 @@ function App() {
           {view === 'operations' && <OperationsPage model={model} setModel={setModel} />}
           {view === 'assets' && <AssetsPage search={search} onSelect={setSelectedAsset} />}
           {view === 'inventory' && <InventoryPage search={search} />}
+          {view === 'logistics' && <LogisticsPage model={model} setModel={setModel} />}
+          {view === 'maintenance' && <MaintenancePage model={model} setModel={setModel} />}
+          {view === 'personnel' && <PersonnelPage model={model} />}
+          {view === 'alerts' && <AlertsPage model={model} setModel={setModel} />}
           {view === 'analytics' && <AnalyticsPage />}
         </div>
       </main>
@@ -209,6 +231,33 @@ function Dashboard({ navigate }: { navigate: (view: View) => void }) {
     <section className="panel station-panel"><PanelHeader title="Station pulse" subtitle="Utilization by research base" action="Compare stations" onClick={() => navigate('analytics')} />{stationUsage.map((station) => <div className="station-row" key={station.station}><div className="station-name"><span className="station-marker"><MapPin size={13} /></span><strong>{station.station}</strong><span>{station.assets} assets</span></div><div className="station-bar"><div style={{ width: `${station.utilization}%` }} /></div><b>{station.utilization}%</b></div>)}</section>
   </div>
 }
+
+function LogisticsPage({ model, setModel }: { model: OperationalModel; setModel: React.Dispatch<React.SetStateAction<OperationalModel>> }) {
+  const [reference, setReference] = useState('')
+  const [explanation, setExplanation] = useState('')
+  const [type, setType] = useState<LogisticsRecord['type']>('Shipment')
+  const addRecord = () => {
+    const label = reference.trim() || `${type} request`
+    setModel((current) => ({ ...current, logistics: [...current.logistics, { id: `LOG-${String(current.logistics.length + 32).padStart(3, '0')}`, type, reference: label, origin: 'Cape Town', destination: 'Maitri', status: type === 'Receipt' ? 'Completed' : 'Planned', owner: 'Expedition manager', explanation: explanation.trim() || 'Record created for operational coordination.' }] }))
+    setReference('')
+    setExplanation('')
+  }
+  return <div className="module-stack"><div className="inventory-summary"><div><span>Active movements</span><strong>{model.logistics.filter((item) => item.status !== 'Completed').length}</strong><small>shipments, transfers and receipts in motion</small></div><div><span>Delayed</span><strong className="text-critical">{model.logistics.filter((item) => item.status === 'Delayed').length}</strong><small>need a route decision</small></div><div><span>Completed</span><strong>{model.logistics.filter((item) => item.status === 'Completed').length}</strong><small>handoffs recorded this operation</small></div></div><section className="panel table-panel"><div className="table-heading"><div><h2>Movement register</h2><p>Every cargo handoff has an owner, status and explanation.</p></div><div className="inline-actions"><select className="compact-select" value={type} onChange={(event) => setType(event.target.value as LogisticsRecord['type'])}><option>Shipment</option><option>Receipt</option><option>Transfer</option></select><button className="primary-button" onClick={addRecord}><Plus size={16} /> Add movement</button></div></div><div className="table-scroll"><table><thead><tr><th>Reference</th><th>Type</th><th>Route</th><th>Status</th><th>Owner</th><th>Explanation</th></tr></thead><tbody>{model.logistics.map((item) => <tr key={item.id}><td><strong>{item.reference}</strong><span className="table-subtext">{item.id}</span></td><td>{item.type}</td><td>{item.origin} → {item.destination}</td><td><WorkflowBadge status={item.status} /></td><td>{item.owner}</td><td className="table-explanation">{item.explanation}</td></tr>)}</tbody></table></div></section><section className="panel inline-form-panel"><div><div className="panel-kicker">RECORD CONTEXT</div><h2>Explain the next movement</h2><p>Capture why the cargo is moving, who owns it, and what happens on arrival.</p></div><input value={reference} onChange={(event) => setReference(event.target.value)} placeholder="Reference or cargo name" /><input value={explanation} onChange={(event) => setExplanation(event.target.value)} placeholder="Route decision or handoff note" /><button className="secondary-button" onClick={addRecord}><Plus size={15} /> Save movement</button></section></div>
+}
+
+function MaintenancePage({ model, setModel }: { model: OperationalModel; setModel: React.Dispatch<React.SetStateAction<OperationalModel>> }) {
+  const [work, setWork] = useState('')
+  const [priority, setPriority] = useState<MaintenanceRecord['priority']>('Routine')
+  const addWorkOrder = () => { setModel((current) => ({ ...current, maintenance: [...current.maintenance, { id: `WO-${String(current.maintenance.length + 119).padStart(3, '0')}`, assetId: current.assets[0]?.id || 'Unassigned', work: work.trim() || 'Scheduled inspection', priority, status: 'Scheduled', due: '20 Sep 2026', technician: 'Maintenance team', explanation: 'Service request created from the maintenance control view.' }] })); setWork('') }
+  const updateStatus = (id: string, status: MaintenanceRecord['status']) => setModel((current) => ({ ...current, maintenance: current.maintenance.map((item) => item.id === id ? { ...item, status } : item) }))
+  return <div className="module-stack"><div className="inventory-summary"><div><span>Open work orders</span><strong>{model.maintenance.filter((item) => item.status !== 'Completed').length}</strong><small>requiring technician attention</small></div><div><span>Urgent</span><strong className="text-critical">{model.maintenance.filter((item) => item.priority === 'Urgent').length}</strong><small>priority service requests</small></div><div><span>Serviceable fleet</span><strong>{Math.round((model.assets.filter((asset) => asset.status === 'Operational').length / Math.max(model.assets.length, 1)) * 100)}%</strong><small>assets currently operational</small></div></div><section className="panel table-panel"><div className="table-heading"><div><h2>Maintenance work orders</h2><p>Schedule, assign, execute and close equipment service.</p></div><div className="inline-actions"><select className="compact-select" value={priority} onChange={(event) => setPriority(event.target.value as MaintenanceRecord['priority'])}><option>Routine</option><option>Priority</option><option>Urgent</option></select><button className="primary-button" onClick={addWorkOrder}><Plus size={16} /> New work order</button></div></div><div className="table-scroll"><table><thead><tr><th>Work order</th><th>Asset</th><th>Priority</th><th>Due</th><th>Technician</th><th>Status</th><th /></tr></thead><tbody>{model.maintenance.map((item) => <tr key={item.id}><td><strong>{item.work}</strong><span className="table-subtext">{item.id} · {item.explanation}</span></td><td>{item.assetId}</td><td><span className={`priority-label ${item.priority.toLowerCase()}`}>{item.priority}</span></td><td>{item.due}</td><td>{item.technician}</td><td><WorkflowBadge status={item.status === 'Blocked' ? 'Delayed' : item.status === 'Scheduled' ? 'Planned' : item.status} /></td><td><button className="text-button" onClick={() => updateStatus(item.id, item.status === 'Completed' ? 'Scheduled' : 'Completed')}>{item.status === 'Completed' ? 'Reopen' : 'Complete'}</button></td></tr>)}</tbody></table></div></section><section className="panel inline-form-panel"><div><div className="panel-kicker">SERVICE REQUEST</div><h2>What needs attention?</h2><p>Create a traceable work order before equipment becomes unavailable.</p></div><input value={work} onChange={(event) => setWork(event.target.value)} placeholder="Inspection, repair or service task" /><button className="secondary-button" onClick={addWorkOrder}><Plus size={15} /> Save work order</button></section></div>
+}
+
+function PersonnelPage({ model }: { model: OperationalModel }) { return <div className="module-stack"><section className="panel table-panel"><div className="table-heading"><div><h2>Personnel readiness</h2><p>Accountability for field work, logistics and equipment.</p></div><span className="workflow-count">{model.people.filter((person) => person.status === 'Available').length} available</span></div><div className="table-scroll"><table><thead><tr><th>Person</th><th>Role</th><th>Station</th><th>Status</th><th>Linked responsibilities</th></tr></thead><tbody>{model.people.map((person) => <tr key={person.id}><td><strong>{person.name}</strong><span className="table-subtext">{person.id}</span></td><td>{person.role}</td><td>{person.station}</td><td><span className={`status-badge ${person.status === 'Available' ? 'operational' : 'maintenance'}`}><i />{person.status}</span></td><td>{model.deployments.filter((deployment) => deployment.assignee === person.name).length} equipment deployment(s)</td></tr>)}</tbody></table></div></section></div> }
+
+function AlertsPage({ model, setModel }: { model: OperationalModel; setModel: React.Dispatch<React.SetStateAction<OperationalModel>> }) { const unresolved = model.alerts.filter((alert) => !alert.resolved); const resolve = (id: string) => setModel((current) => ({ ...current, alerts: current.alerts.map((alert) => alert.id === id ? { ...alert, resolved: !alert.resolved } : alert) })); return <div className="module-stack"><section className="panel table-panel"><div className="table-heading"><div><h2>Alert center</h2><p>{unresolved.length} open alert(s) with an explanation and response state.</p></div><button className="primary-button" onClick={() => setModel((current) => ({ ...current, alerts: [...current.alerts, { id: `ALT-${String(current.alerts.length + 42).padStart(3, '0')}`, title: 'Operator review required', severity: 'Info', explanation: 'Created manually for follow-up during the next command review.', resolved: false }] }))}><Plus size={16} /> Generate alert</button></div><div className="attention-list alert-list">{model.alerts.map((alert) => <div className="attention-item" key={alert.id}><span className={`severity-icon ${alert.resolved ? 'resolved' : alert.severity.toLowerCase()}`}><AlertTriangle size={15} /></span><div><strong>{alert.title}</strong><span>{alert.explanation}</span></div><button className="text-button" onClick={() => resolve(alert.id)}>{alert.resolved ? 'Reopen' : 'Resolve'}</button></div>)}</div></section></div> }
+
+function WorkflowBadge({ status }: { status: WorkflowStatus }) { const key = status.toLowerCase().replace(' ', '-'); return <span className={`status-badge ${key}`}><i />{status}</span> }
 
 function OperationsPage({ model, setModel }: { model: OperationalModel; setModel: React.Dispatch<React.SetStateAction<OperationalModel>> }) {
   const [activeStep, setActiveStep] = useState(0)
