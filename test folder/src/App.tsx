@@ -132,7 +132,7 @@ const assetHealth = [
 
 const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-  { id: 'operations', label: 'Operations flow', icon: ClipboardList },
+  { id: 'operations', label: 'Expeditions', icon: ClipboardList },
   { id: 'assets', label: 'Asset registry', icon: Boxes },
   { id: 'inventory', label: 'Inventory', icon: PackageSearch },
   { id: 'logistics', label: 'Logistics', icon: Truck },
@@ -173,8 +173,8 @@ function App() {
 
   useEffect(() => { localStorage.setItem('ploropsis-operational-model', JSON.stringify(model)) }, [model])
 
-  const pageTitle = view === 'dashboard' ? 'Operations overview' : view === 'operations' ? 'Operations flow' : view === 'assets' ? 'Asset registry' : view === 'inventory' ? 'Inventory control' : view === 'logistics' ? 'Logistics control' : view === 'maintenance' ? 'Maintenance control' : view === 'personnel' ? 'Personnel readiness' : view === 'alerts' ? 'Alert center' : 'Decision analytics'
-  const pageDescription = view === 'dashboard' ? 'Live readiness picture for the current polar operation.' : view === 'operations' ? 'Move one operational record from approval to field outcome.' : view === 'assets' ? 'Track condition, location and lifecycle of every field asset.' : view === 'inventory' ? 'Monitor consumables, thresholds and stock movement across stations.' : view === 'logistics' ? 'Coordinate movement, receipt and handover of expedition cargo.' : view === 'maintenance' ? 'Keep equipment serviceable with accountable work orders.' : view === 'personnel' ? 'See who is available, deployed and responsible for the next action.' : view === 'alerts' ? 'Explain operational risk and close the loop on response.' : 'Understand utilization, consumption and operational pressure by station.'
+  const pageTitle = view === 'dashboard' ? 'Operations overview' : view === 'operations' ? 'Expeditions' : view === 'assets' ? 'Asset registry' : view === 'inventory' ? 'Inventory control' : view === 'logistics' ? 'Logistics control' : view === 'maintenance' ? 'Maintenance control' : view === 'personnel' ? 'Personnel readiness' : view === 'alerts' ? 'Alert center' : 'Decision analytics'
+  const pageDescription = view === 'dashboard' ? 'Live readiness picture for the current polar operation.' : view === 'operations' ? 'Move an expedition record from approval to field outcome.' : view === 'assets' ? 'Track condition, location and lifecycle of every field asset.' : view === 'inventory' ? 'Monitor consumables, thresholds and stock movement across stations.' : view === 'logistics' ? 'Coordinate movement, receipt and handover of expedition cargo.' : view === 'maintenance' ? 'Keep equipment serviceable with accountable work orders.' : view === 'personnel' ? 'See who is available, deployed and responsible for the next action.' : view === 'alerts' ? 'Explain operational risk and close the loop on response.' : 'Understand utilization, consumption and operational pressure by station.'
 
   const navigate = (nextView: View) => {
     setView(nextView)
@@ -259,6 +259,23 @@ function AlertsPage({ model, setModel }: { model: OperationalModel; setModel: Re
 
 function WorkflowBadge({ status }: { status: WorkflowStatus }) { const key = status.toLowerCase().replace(' ', '-'); return <span className={`status-badge ${key}`}><i />{status}</span> }
 
+function ExpeditionPortfolio({ model, setModel }: { model: OperationalModel; setModel: React.Dispatch<React.SetStateAction<OperationalModel>> }) {
+  const [purpose, setPurpose] = useState('')
+  const [amount, setAmount] = useState('')
+  const [owner, setOwner] = useState('Expedition manager')
+  const [status, setStatus] = useState<WorkflowStatus>('In progress')
+  const [explanation, setExplanation] = useState('')
+  const addExpedition = () => {
+    const nextId = `EXP-${String(model.expenditures.length + 27).padStart(3, '0')}`
+    setModel((current) => ({ ...current, expenditures: [...current.expenditures, { id: nextId, purpose: purpose.trim() || 'New expedition requirement', amount: Number(amount) || 0, owner: owner.trim() || 'Expedition manager', status, explanation: explanation.trim() || 'No additional explanation provided.' }] }))
+    setPurpose('')
+    setAmount('')
+    setExplanation('')
+  }
+  const removeExpedition = (id: string) => setModel((current) => ({ ...current, expenditures: current.expenditures.filter((item) => item.id !== id) }))
+  return <section className="panel expedition-portfolio"><div className="panel-header"><div><div className="panel-kicker">EXPEDITION PORTFOLIO</div><h2>Current expedition expenditures</h2><p>Add or remove the expenditure records that are active for this operation.</p></div><span className="workflow-count">{model.expenditures.length} tracked</span></div><div className="expedition-list">{model.expenditures.map((item) => <article className="expedition-card" key={item.id}><div className="expedition-card-top"><span className="record-id">{item.id}</span><WorkflowBadge status={item.status} /><button className="icon-button" onClick={() => removeExpedition(item.id)} aria-label={`Remove ${item.purpose}`}><X size={15} /></button></div><h3>{item.purpose}</h3><div className="expedition-meta"><span>{item.owner}</span><strong>{item.amount ? `₹${item.amount.toLocaleString()}` : 'Amount pending'}</strong></div><p>{item.explanation}</p></article>)}</div><div className="expedition-form"><input value={purpose} onChange={(event) => setPurpose(event.target.value)} placeholder="Expedition expenditure" /><input type="number" min="0" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Amount" /><input value={owner} onChange={(event) => setOwner(event.target.value)} placeholder="Owner" /><select value={status} onChange={(event) => setStatus(event.target.value as WorkflowStatus)}><option>Planned</option><option>In progress</option><option>Completed</option><option>Delayed</option></select><input value={explanation} onChange={(event) => setExplanation(event.target.value)} placeholder="Why is this expenditure needed?" /><button className="primary-button" onClick={addExpedition}><Plus size={16} /> Add expedition</button></div></section>
+}
+
 function OperationsPage({ model, setModel }: { model: OperationalModel; setModel: React.Dispatch<React.SetStateAction<OperationalModel>> }) {
   const [activeStep, setActiveStep] = useState(0)
   const [name, setName] = useState('')
@@ -302,8 +319,7 @@ function OperationsPage({ model, setModel }: { model: OperationalModel; setModel
     setExplanation('')
   }
 
-  return <div className="operations-layout">
-    <section className="panel workflow-panel"><div className="panel-header"><div><div className="panel-kicker">CONTROLLED WORKFLOW</div><h2>From budget to field outcome</h2><p>Each step creates a record that explains what happened and why.</p></div><span className="workflow-count">{activeStep + 1} / {steps.length}</span></div><div className="workflow-steps">{steps.map((step, index) => { const Icon = step.icon; return <button key={step.label} className={`workflow-step ${activeStep === index ? 'active' : ''} ${activeStep > index ? 'complete' : ''}`} onClick={() => setActiveStep(index)}><span className="workflow-number">{activeStep > index ? <CircleCheck size={14} /> : index + 1}</span><Icon size={16} /><span>{step.label}</span></button> })}</div></section>
+  return <div className="operations-layout"><ExpeditionPortfolio model={model} setModel={setModel} />
     <div className="workflow-detail-grid"><section className="panel workflow-explainer"><div className="panel-kicker">STEP {activeStep + 1} · {current.collection.toUpperCase()}</div><h2>{current.label}</h2><p className="workflow-lead">{current.detail}</p><div className="explanation-columns"><div><strong>What it creates</strong><span>{current.collection === 'dashboard' || current.collection === 'analytics' ? 'A live view of the operational model.' : `A new ${current.collection.slice(0, -1)} record in the shared model.`}</span></div><div><strong>Why it matters</strong><span>{current.collection === 'alerts' ? 'Operators can act before a small variance becomes a field disruption.' : 'Downstream teams get context instead of an isolated transaction.'}</span></div><div><strong>Current records</strong><span>{recordCount} tracked in this operation.</span></div></div>{current.collection !== 'dashboard' && current.collection !== 'analytics' && <div className="workflow-form"><label>Record name or cargo<input value={name} onChange={(event) => setName(event.target.value)} placeholder={current.label} /></label><label>Explanation / reason<textarea value={explanation} onChange={(event) => setExplanation(event.target.value)} placeholder="Explain the decision, impact, or next action..." rows={3} /></label><button className="primary-button" onClick={commitStep}><Plus size={16} /> Add to model</button></div>}</section><section className="panel workflow-ledger"><div className="panel-header"><div><div className="panel-kicker">LIVE LEDGER</div><h2>{current.collection === 'dashboard' ? 'Dashboard ready' : current.collection === 'analytics' ? 'Analytics ready' : 'Recent records'}</h2></div><ClipboardList size={18} /></div>{current.collection === 'dashboard' || current.collection === 'analytics' ? <div className="workflow-view-card"><Gauge size={28} /><strong>Open {current.label.toLowerCase()}</strong><span>Use the command center navigation to see the model summarized in context.</span></div> : <div className="workflow-records">{getWorkflowRecords(model, current.collection).slice(-4).reverse().map((record) => <div className="workflow-record" key={record.id}><span className="record-icon"><CircleCheck size={14} /></span><div><strong>{record.title}</strong><span>{record.meta}</span></div></div>)}</div>}</section></div>
   </div>
 }
