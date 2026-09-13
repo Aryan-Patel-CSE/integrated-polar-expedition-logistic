@@ -165,4 +165,4 @@ The prototype demonstrates the user experience, information architecture and dec
 
 
 
-**POLAR OPS turns scattered operational information into one clear, actionable view - helping polar teams prepare earlier, respond faster and operate more safely.**
+**PLOROPSIS turns scattered operational information into one clear, actionable view - helping polar teams prepare earlier, respond faster and operate more safely.**
