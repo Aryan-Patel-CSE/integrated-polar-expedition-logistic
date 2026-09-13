@@ -10,12 +10,14 @@ import {
   CalendarDays,
   ChevronRight,
   CircleHelp,
+  CircleCheck,
   ClipboardList,
   Command,
   Gauge,
   LayoutDashboard,
   MapPin,
   Menu,
+  Plus,
   PackageSearch,
   PanelLeftClose,
   Search,
@@ -23,6 +25,7 @@ import {
   ShieldCheck,
   Snowflake,
   Truck,
+  Users,
   Wrench,
   X,
 } from 'lucide-react'
@@ -41,7 +44,7 @@ import {
   YAxis,
 } from 'recharts'
 
-type View = 'dashboard' | 'assets' | 'inventory' | 'analytics'
+type View = 'dashboard' | 'operations' | 'assets' | 'inventory' | 'analytics'
 type AssetStatus = 'Operational' | 'Maintenance' | 'Damaged' | 'Missing'
 type StockStatus = 'Normal' | 'Low stock' | 'Critical'
 
@@ -66,6 +69,24 @@ type InventoryItem = {
   threshold: number
   status: StockStatus
   change: number
+}
+
+type WorkflowStatus = 'Planned' | 'In progress' | 'Completed' | 'Delayed'
+type Expenditure = { id: string; purpose: string; amount: number; owner: string; status: WorkflowStatus; explanation: string }
+type Person = { id: string; name: string; role: string; station: string; status: 'Available' | 'Deployed' }
+type Shipment = { id: string; route: string; cargo: string; eta: string; status: WorkflowStatus; explanation: string }
+type Deployment = { id: string; assetId: string; destination: string; assignee: string; status: WorkflowStatus }
+type ConsumptionLog = { id: string; item: string; quantity: number; station: string; reason: string; date: string }
+type AlertRecord = { id: string; title: string; severity: 'Info' | 'Warning' | 'Critical'; explanation: string; resolved: boolean }
+type OperationalModel = {
+  expenditures: Expenditure[]
+  people: Person[]
+  assets: Asset[]
+  inventory: InventoryItem[]
+  shipments: Shipment[]
+  deployments: Deployment[]
+  consumption: ConsumptionLog[]
+  alerts: AlertRecord[]
 }
 
 const assets: Asset[] = [
@@ -107,19 +128,32 @@ const assetHealth = [
 
 const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+  { id: 'operations', label: 'Operations flow', icon: ClipboardList },
   { id: 'assets', label: 'Asset registry', icon: Boxes },
   { id: 'inventory', label: 'Inventory', icon: PackageSearch },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ]
+
+const seedOperationalModel: OperationalModel = {
+  expenditures: [{ id: 'EXP-026', purpose: 'Winter fuel reserve', amount: 18400, owner: 'A. Rao', status: 'Completed', explanation: 'Approved against the winter operations budget to protect the Maitri power reserve.' }],
+  people: [{ id: 'PER-014', name: 'Leena Bose', role: 'Field scientist', station: 'Bharati', status: 'Deployed' }, { id: 'PER-021', name: 'Milan Das', role: 'Logistics lead', station: 'Maitri', status: 'Available' }],
+  assets,
+  inventory,
+  shipments: [{ id: 'SH-204', route: 'Cape Town to Maitri', cargo: 'Medical kits + filters', eta: '18 Sep 2026', status: 'Delayed', explanation: 'Weather window reduced the next transfer opportunity by 18 hours.' }],
+  deployments: [{ id: 'DEP-008', assetId: 'GEN-104', destination: 'Maitri power shed', assignee: 'Milan Das', status: 'In progress' }],
+  consumption: [{ id: 'CON-118', item: 'Diesel fuel', quantity: 42, station: 'Maitri', reason: 'Generator load test', date: '13 Sep 2026' }],
+  alerts: [{ id: 'ALT-041', title: 'Medical kits below critical threshold', severity: 'Critical', explanation: 'Bharati has 12 kits against a threshold of 20. Link a shipment or approve replenishment.', resolved: false }],
+}
 
 function App() {
   const [view, setView] = useState<View>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
+  const [model, setModel] = useState<OperationalModel>(seedOperationalModel)
 
-  const pageTitle = view === 'dashboard' ? 'Operations overview' : view === 'assets' ? 'Asset registry' : view === 'inventory' ? 'Inventory control' : 'Decision analytics'
-  const pageDescription = view === 'dashboard' ? 'Live readiness picture for the current polar operation.' : view === 'assets' ? 'Track condition, location and lifecycle of every field asset.' : view === 'inventory' ? 'Monitor consumables, thresholds and stock movement across stations.' : 'Understand utilization, consumption and operational pressure by station.'
+  const pageTitle = view === 'dashboard' ? 'Operations overview' : view === 'operations' ? 'Operations flow' : view === 'assets' ? 'Asset registry' : view === 'inventory' ? 'Inventory control' : 'Decision analytics'
+  const pageDescription = view === 'dashboard' ? 'Live readiness picture for the current polar operation.' : view === 'operations' ? 'Move one operational record from approval to field outcome.' : view === 'assets' ? 'Track condition, location and lifecycle of every field asset.' : view === 'inventory' ? 'Monitor consumables, thresholds and stock movement across stations.' : 'Understand utilization, consumption and operational pressure by station.'
 
   const navigate = (nextView: View) => {
     setView(nextView)
@@ -133,7 +167,7 @@ function App() {
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="brand-lockup">
           <div className="brand-mark"><Snowflake size={19} strokeWidth={2.3} /></div>
-          <div><strong>POLAR OPS</strong><span>NCPOR COMMAND</span></div>
+          <div><strong>ploropsis</strong><span>NCPOR COMMAND</span></div>
           <button className="icon-button mobile-close" onClick={() => setSidebarOpen(false)} aria-label="Close navigation"><X size={18} /></button>
         </div>
         <div className="workspace-switcher"><div className="station-dot" /><div><span>ACTIVE OPERATION</span><strong>ISEA-46 / Maitri</strong></div><ChevronRight size={15} /></div>
@@ -146,7 +180,7 @@ function App() {
           <button className="nav-item muted"><ShieldCheck size={18} /><span>Personnel</span><span className="coming-soon">Soon</span></button>
           <button className="nav-item muted"><AlertTriangle size={18} /><span>Alerts</span><span className="alert-count">4</span></button>
         </nav>
-        <div className="sidebar-footer"><button className="nav-item"><Settings size={18} /><span>Settings</span></button><div className="user-chip"><div className="avatar">AR</div><div><strong>Aryan Rao</strong><span>Expedition manager</span></div><ChevronRight size={15} /></div></div>
+        <div className="sidebar-footer"><button className="nav-item"><Settings size={18} /><span>Settings</span></button><div className="user-chip"><div className="avatar">EM</div><div><strong>Expedition manager</strong><span>Operations team</span></div><ChevronRight size={15} /></div></div>
       </aside>
       {sidebarOpen && <button className="sidebar-overlay" onClick={() => setSidebarOpen(false)} aria-label="Close navigation overlay" />}
       <main className="main-content">
@@ -154,6 +188,7 @@ function App() {
         <div className="page-wrap">
           <div className="page-heading"><div><div className="eyebrow"><span className="live-dot" /> SYSTEMS NOMINAL <span className="eyebrow-divider">/</span> 13 SEPTEMBER 2026</div><h1>{pageTitle}</h1><p>{pageDescription}</p></div><div className="heading-actions"><button className="secondary-button"><CalendarDays size={16} /> Last 30 days</button><button className="primary-button" onClick={() => navigate(view === 'assets' ? 'assets' : 'inventory')}><Activity size={16} /> Quick action</button></div></div>
           {view === 'dashboard' && <Dashboard navigate={navigate} />}
+          {view === 'operations' && <OperationsPage model={model} setModel={setModel} />}
           {view === 'assets' && <AssetsPage search={search} onSelect={setSelectedAsset} />}
           {view === 'inventory' && <InventoryPage search={search} />}
           {view === 'analytics' && <AnalyticsPage />}
@@ -174,6 +209,68 @@ function Dashboard({ navigate }: { navigate: (view: View) => void }) {
     <section className="panel station-panel"><PanelHeader title="Station pulse" subtitle="Utilization by research base" action="Compare stations" onClick={() => navigate('analytics')} />{stationUsage.map((station) => <div className="station-row" key={station.station}><div className="station-name"><span className="station-marker"><MapPin size={13} /></span><strong>{station.station}</strong><span>{station.assets} assets</span></div><div className="station-bar"><div style={{ width: `${station.utilization}%` }} /></div><b>{station.utilization}%</b></div>)}</section>
   </div>
 }
+
+function OperationsPage({ model, setModel }: { model: OperationalModel; setModel: React.Dispatch<React.SetStateAction<OperationalModel>> }) {
+  const [activeStep, setActiveStep] = useState(0)
+  const [name, setName] = useState('')
+  const [explanation, setExplanation] = useState('')
+  const steps = [
+    { label: 'Create expenditure', detail: 'Authorize the cost before stock or transport is committed.', icon: CoinsIcon, collection: 'expenditures' },
+    { label: 'Add person and asset', detail: 'Create the accountable people and equipment records.', icon: Users, collection: 'people' },
+    { label: 'Add inventory', detail: 'Register stock with a threshold so shortages can become alerts.', icon: PackageSearch, collection: 'inventory' },
+    { label: 'Create shipment', detail: 'Define cargo, route and expected arrival.', icon: Truck, collection: 'shipments' },
+    { label: 'Track shipment', detail: 'Keep route status and delay reasoning visible.', icon: MapPin, collection: 'shipments' },
+    { label: 'Receive cargo', detail: 'Turn an arriving shipment into available station stock.', icon: ClipboardCheckIcon, collection: 'shipments' },
+    { label: 'Deploy equipment', detail: 'Assign an asset and a person to an operational destination.', icon: Wrench, collection: 'deployments' },
+    { label: 'Consume supplies', detail: 'Record usage with a reason for traceability.', icon: Activity, collection: 'consumption' },
+    { label: 'Generate alert', detail: 'Explain the risk and make the follow-up explicit.', icon: AlertTriangle, collection: 'alerts' },
+    { label: 'View dashboard', detail: 'Read readiness, attention items and station pulse.', icon: LayoutDashboard, collection: 'dashboard' },
+    { label: 'View analytics', detail: 'Compare utilization, consumption and route pressure.', icon: BarChart3, collection: 'analytics' },
+  ] as const
+  const current = steps[activeStep]
+  const recordCount = current.collection === 'dashboard' || current.collection === 'analytics' ? 1 : model[current.collection].length
+
+  const commitStep = () => {
+    const label = name.trim() || current.label
+    const note = explanation.trim() || current.detail
+    const id = `${current.collection.slice(0, 3).toUpperCase()}-${String(recordCount + 1).padStart(3, '0')}`
+    setModel((existing) => {
+      if (current.collection === 'expenditures') return { ...existing, expenditures: [...existing.expenditures, { id, purpose: label, amount: 0, owner: 'Expedition manager', status: 'Planned', explanation: note }] }
+      if (current.collection === 'people') return { ...existing, people: [...existing.people, { id, name: label, role: 'Expedition team', station: 'Maitri', status: 'Available' }], assets: [...existing.assets, { id: `AST-${String(existing.assets.length + 1).padStart(3, '0')}`, name: `${label} field kit`, category: 'Field equipment', station: 'Maitri', status: 'Operational', condition: 'Good', lastInspection: 'Not yet inspected', nextMaintenance: 'To be scheduled' }] }
+      if (current.collection === 'inventory') return { ...existing, inventory: [...existing.inventory, { id, item: label, category: 'General', station: 'Maitri', quantity: 0, unit: 'units', threshold: 0, status: 'Critical', change: 0 }] }
+      if (current.collection === 'shipments') {
+        const shipment = { id, route: 'To Maitri', cargo: label, eta: 'To be confirmed', status: activeStep === 5 ? 'Completed' as WorkflowStatus : activeStep === 4 ? 'In progress' as WorkflowStatus : 'Planned' as WorkflowStatus, explanation: note }
+        return activeStep === 5
+          ? { ...existing, shipments: [...existing.shipments, shipment], inventory: [...existing.inventory, { id: `INV-${String(existing.inventory.length + 1).padStart(3, '0')}`, item: label, category: 'Received cargo', station: 'Maitri', quantity: 1, unit: 'consignment', threshold: 1, status: 'Normal', change: 0 }] }
+          : { ...existing, shipments: [...existing.shipments, shipment] }
+      }
+      if (current.collection === 'deployments') return { ...existing, deployments: [...existing.deployments, { id, assetId: 'GEN-104', destination: label, assignee: 'Expedition manager', status: 'Planned' }] }
+      if (current.collection === 'consumption') return { ...existing, consumption: [...existing.consumption, { id, item: label, quantity: 1, station: 'Maitri', reason: note, date: '13 Sep 2026' }] }
+      if (current.collection === 'alerts') return { ...existing, alerts: [...existing.alerts, { id, title: label, severity: 'Warning', explanation: note, resolved: false }] }
+      return existing
+    })
+    setName('')
+    setExplanation('')
+  }
+
+  return <div className="operations-layout">
+    <section className="panel workflow-panel"><div className="panel-header"><div><div className="panel-kicker">CONTROLLED WORKFLOW</div><h2>From budget to field outcome</h2><p>Each step creates a record that explains what happened and why.</p></div><span className="workflow-count">{activeStep + 1} / {steps.length}</span></div><div className="workflow-steps">{steps.map((step, index) => { const Icon = step.icon; return <button key={step.label} className={`workflow-step ${activeStep === index ? 'active' : ''} ${activeStep > index ? 'complete' : ''}`} onClick={() => setActiveStep(index)}><span className="workflow-number">{activeStep > index ? <CircleCheck size={14} /> : index + 1}</span><Icon size={16} /><span>{step.label}</span></button> })}</div></section>
+    <div className="workflow-detail-grid"><section className="panel workflow-explainer"><div className="panel-kicker">STEP {activeStep + 1} · {current.collection.toUpperCase()}</div><h2>{current.label}</h2><p className="workflow-lead">{current.detail}</p><div className="explanation-columns"><div><strong>What it creates</strong><span>{current.collection === 'dashboard' || current.collection === 'analytics' ? 'A live view of the operational model.' : `A new ${current.collection.slice(0, -1)} record in the shared model.`}</span></div><div><strong>Why it matters</strong><span>{current.collection === 'alerts' ? 'Operators can act before a small variance becomes a field disruption.' : 'Downstream teams get context instead of an isolated transaction.'}</span></div><div><strong>Current records</strong><span>{recordCount} tracked in this operation.</span></div></div>{current.collection !== 'dashboard' && current.collection !== 'analytics' && <div className="workflow-form"><label>Record name or cargo<input value={name} onChange={(event) => setName(event.target.value)} placeholder={current.label} /></label><label>Explanation / reason<textarea value={explanation} onChange={(event) => setExplanation(event.target.value)} placeholder="Explain the decision, impact, or next action..." rows={3} /></label><button className="primary-button" onClick={commitStep}><Plus size={16} /> Add to model</button></div>}</section><section className="panel workflow-ledger"><div className="panel-header"><div><div className="panel-kicker">LIVE LEDGER</div><h2>{current.collection === 'dashboard' ? 'Dashboard ready' : current.collection === 'analytics' ? 'Analytics ready' : 'Recent records'}</h2></div><ClipboardList size={18} /></div>{current.collection === 'dashboard' || current.collection === 'analytics' ? <div className="workflow-view-card"><Gauge size={28} /><strong>Open {current.label.toLowerCase()}</strong><span>Use the command center navigation to see the model summarized in context.</span></div> : <div className="workflow-records">{getWorkflowRecords(model, current.collection).slice(-4).reverse().map((record) => <div className="workflow-record" key={record.id}><span className="record-icon"><CircleCheck size={14} /></span><div><strong>{record.title}</strong><span>{record.meta}</span></div></div>)}</div>}</section></div>
+  </div>
+}
+
+function getWorkflowRecords(model: OperationalModel, collection: string): { id: string; title: string; meta: string }[] {
+  if (collection === 'expenditures') return model.expenditures.map((item) => ({ id: item.id, title: item.purpose, meta: `${item.status} · ${item.explanation}` }))
+  if (collection === 'people') return model.people.map((item) => ({ id: item.id, title: item.name, meta: `${item.role} · ${item.station}` }))
+  if (collection === 'inventory') return model.inventory.map((item) => ({ id: item.id, title: item.item, meta: `${item.quantity} ${item.unit} · ${item.status}` }))
+  if (collection === 'shipments') return model.shipments.map((item) => ({ id: item.id, title: item.cargo, meta: `${item.status} · ${item.route}` }))
+  if (collection === 'deployments') return model.deployments.map((item) => ({ id: item.id, title: item.destination, meta: `${item.assetId} · ${item.assignee}` }))
+  if (collection === 'consumption') return model.consumption.map((item) => ({ id: item.id, title: item.item, meta: `${item.quantity} used · ${item.reason}` }))
+  return model.alerts.map((item) => ({ id: item.id, title: item.title, meta: `${item.severity} · ${item.explanation}` }))
+}
+
+function CoinsIcon({ size = 18 }: { size?: number }) { return <span className="coin-icon" style={{ width: size, height: size }}>$</span> }
+function ClipboardCheckIcon({ size = 18 }: { size?: number }) { return <span className="clipboard-check-icon"><ClipboardList size={size} /><CircleCheck size={size / 2} /></span> }
 
 function Kpi({ label, value, detail, trend, warning, icon }: { label: string; value: string; detail: string; trend: 'up' | 'down'; warning?: boolean; icon: React.ReactNode }) { return <article className={`kpi-card ${warning ? 'kpi-warning' : ''}`}><div className="kpi-top"><span className="kpi-icon">{icon}</span><span className={`trend ${trend}`}>{trend === 'up' ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{trend === 'up' ? '3.2%' : 'Needs review'}</span></div><span className="kpi-label">{label}</span><strong className="kpi-value">{value}</strong><span className="kpi-detail">{detail}</span></article> }
 function PanelHeader({ title, subtitle, action, onClick }: { title: string; subtitle: string; action?: string; onClick?: () => void }) { return <div className="panel-header"><div><h2>{title}</h2><p>{subtitle}</p></div>{action && <button className="text-button" onClick={onClick}>{action}<ChevronRight size={14} /></button>}</div> }

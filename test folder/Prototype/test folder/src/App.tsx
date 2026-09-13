@@ -174,7 +174,7 @@ function App() {
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="brand-lockup">
           <div className="brand-mark"><Snowflake size={19} strokeWidth={2.3} /></div>
-          <div><strong>POLAR OPS</strong><span>NCPOR COMMAND</span></div>
+          <div><strong>ploropsis</strong><span>NCPOR COMMAND</span></div>
           <button className="icon-button mobile-close" onClick={() => setSidebarOpen(false)} aria-label="Close navigation"><X size={18} /></button>
         </div>
         <label className="workspace-switcher"><div className="station-dot" /><div><span>ACTIVE OPERATION</span><select value={operationId} onChange={(event) => switchOperation(event.target.value)} aria-label="Select active operation">{operations.map((operation) => <option key={operation.id} value={operation.id}>{operation.label}</option>)}</select></div><ChevronRight size={15} /></label>
@@ -187,7 +187,7 @@ function App() {
           <button className="nav-item muted"><ShieldCheck size={18} /><span>Personnel</span><span className="coming-soon">Soon</span></button>
           <button className="nav-item muted"><AlertTriangle size={18} /><span>Alerts</span><span className="alert-count">4</span></button>
         </nav>
-        <div className="sidebar-footer"><button className="nav-item"><Settings size={18} /><span>Settings</span></button><div className="user-chip"><div className="avatar">AR</div><div><strong>Aryan Rao</strong><span>Expedition manager</span></div><ChevronRight size={15} /></div></div>
+        <div className="sidebar-footer"><button className="nav-item"><Settings size={18} /><span>Settings</span></button><div className="user-chip"><div className="avatar">EM</div><div><strong>Expedition manager</strong><span>Operations team</span></div><ChevronRight size={15} /></div></div>
       </aside>
       {sidebarOpen && <button className="sidebar-overlay" onClick={() => setSidebarOpen(false)} aria-label="Close navigation overlay" />}
       <main className="main-content">
